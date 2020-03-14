@@ -14,7 +14,7 @@ Performs interaction between 'evbx-product' and 'evbx-resource' services and any
     * [SpringSecurity](https://spring.io/projects/spring-security)
 * **Data**
     * [Docker](https://www.docker.com/)
-    * [MySql](https://www.mysql.com/)
+    * [MySQL](https://www.mysql.com/)
     * [FlyWay](https://flywaydb.org/)
 * **CI Cloud**
     * [TravisCI](https://travis-ci.org/)
