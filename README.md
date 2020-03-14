@@ -1,6 +1,6 @@
 
 # evbx-api project
-Performs interaction between 'evbx-product' and 'evbx-resource'services and any client
+Performs interaction between 'evbx-product' and 'evbx-resource' services and any client.
 ## Set up project
 * Set up [evbx-resource](https://github.com/klindziukp/evbx-product) server using [Resource-readme](https://github.com/klindziukp/evbx-resource/blob/master/README.md)
 * Set up [evbx-product](https://github.com/klindziukp/evbx-product) server using [Product-readme](https://github.com/klindziukp/evbx-product/blob/master/README.md)
