@@ -1,0 +1,65 @@
+version: '3.7'
+
+services:
+  evbx-mysql:
+    image: mysql:5.7.24
+    container_name: evbx-mysql
+    volumes:
+      - mysqldata:/usr/share/mysql/data
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_DATABASE: evbx_resource
+      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: root
+    entrypoint:
+      sh -c "
+      echo 'CREATE DATABASE IF NOT EXISTS evbx_resource; CREATE DATABASE IF NOT EXISTS evbx_product;' > /docker-entrypoint-initdb.d/init.sql;
+      /usr/local/bin/docker-entrypoint.sh --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+      "
+    networks:
+      - evbx
+  evbx-flyway:
+    image: flyway/flyway
+    container_name: evbx-flyway
+    command: -url=jdbc:mysql://evbx-mysql -schemas=evbx_resource,evbx_product -user=root -password=root -connectRetries=60 migrate
+    volumes:
+      - .:/flyway/sql
+    depends_on:
+      - evbx-mysql
+    networks:
+      - evbx
+  evbx-resource:
+    image: klindziuk/evbx-resource
+    container_name: evbx-resource
+    ports:
+      - 8002:8002
+    networks:
+      - evbx
+  evbx-product:
+    image: klindziuk/evbx-product
+    container_name: evbx-product
+    ports:
+      - 8001:8001
+    depends_on:
+      - evbx-resource
+    networks:
+      - evbx
+  evbx-graphql:
+    image: klindziuk/evbx-graphql
+    container_name: evbx-graphql
+    ports:
+      - 8000:8000
+    depends_on:
+      - evbx-resource
+      - evbx-product
+    networks:
+      - evbx
+
+networks:
+  evbx:
+    name: evbx
+
+volumes:
+  mysqldata:
+    driver: local
