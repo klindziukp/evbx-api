@@ -2,7 +2,7 @@
 # evbx-api project
 Performs interaction between 'evbx-product' and 'evbx-resource' services and with graphQL server on top.
 ## Specifications
-* [GraphQL schema](https://github.com/klindziukp/evbx-product/blob/master/contract/evbx-product-contract.yaml)
+* [GraphQL schema](https://github.com/klindziukp/evbx-graphql/blob/master/src/main/resources/schema.graphql)
 * [Evbx resource open API specification](https://github.com/klindziukp/evbx-resource/blob/master/contract/evbx-resource-contract.yaml)
 * [Evbx product open API specification](https://github.com/klindziukp/evbx-product/blob/master/contract/evbx-product-contract.yaml)
 ## Project set up for development
