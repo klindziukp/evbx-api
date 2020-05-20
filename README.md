@@ -1,6 +1,6 @@
 
 # evbx-api project
-Performs interaction between 'evbx-product' and 'evbx-resource' services and with graphQL server on top.
+Performs interaction between 'evbx-product' and 'evbx-resource' services and with GraphQL server on top.
 ## Specifications
 * [GraphQL schema](https://github.com/klindziukp/evbx-graphql/blob/master/src/main/resources/schema.graphql)
 * [Evbx resource open API specification](https://github.com/klindziukp/evbx-resource/blob/master/contract/evbx-resource-contract.yaml)
