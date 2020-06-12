@@ -1,0 +1,245 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: evbx-dev
+  labels:
+    name: ebxv-dev
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pv-claim-dev
+  namespace: evbx-dev
+  labels:
+    app: evbx
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 512Mi
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+  namespace: evbx-dev
+type: Opaque
+data:
+  MYSQL_ROOT_PASSWORD: cm9vdA== # root
+  MYSQL_USER: cm9vdA==          # root
+  MYSQL_PASSWORD: cm9vdA==      # root
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evbx-mysql
+  namespace: evbx-dev
+  labels:
+    app: evbx-mysql
+spec:
+  selector:
+    matchLabels:
+      app: evbx-mysql
+      environment: development
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: evbx-mysql
+        environment: development
+    spec:
+      containers:
+        - image: mysql:5.7.24
+          name: evbx-mysql
+          command: ["/bin/sh"]
+          args: ["-c","echo 'CREATE DATABASE evbx_resource; USE evbx_resource;
+          CREATE TABLE `industry_report` ( `id` BIGINT AUTO_INCREMENT, `industry_name` VARCHAR(255), `text` LONGTEXT, `description` VARCHAR(255),
+          	`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          	`deleted_at` TIMESTAMP NULL DEFAULT NULL, `created_by` VARCHAR(255), `updated_by` VARCHAR(255), `deleted_by` VARCHAR(255),
+          	PRIMARY KEY (`id`), CONSTRAINT uc_name UNIQUE (industry_name));
+          CREATE TABLE IF NOT EXISTS `e_books` ( `id` BIGINT AUTO_INCREMENT, `book_name` VARCHAR(255), `description` VARCHAR(255), `text` LONGTEXT,
+          	`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          	`deleted_at` TIMESTAMP NULL DEFAULT NULL, `created_by` VARCHAR(255), `updated_by` VARCHAR(255), `deleted_by` VARCHAR(255),
+          	PRIMARY KEY (`id`), CONSTRAINT uc_name UNIQUE (book_name));
+          CREATE TABLE IF NOT EXISTS `specifications` ( `id` BIGINT AUTO_INCREMENT, `specification_name` VARCHAR(255), `description` VARCHAR(255),
+          	`text` LONGTEXT, `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          	`deleted_at` TIMESTAMP NULL DEFAULT NULL, `created_by` VARCHAR(255), `updated_by` VARCHAR(255), `deleted_by` VARCHAR(255),
+          	PRIMARY KEY (`id`), CONSTRAINT uc_name UNIQUE (specification_name));
+          CREATE DATABASE evbx_product; USE evbx_product;
+          CREATE TABLE `product` ( `id` BIGINT AUTO_INCREMENT, `product_name` VARCHAR(255), `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          	`updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP NULL DEFAULT NULL, `created_by` VARCHAR(255),
+          	`updated_by` VARCHAR(255), `deleted_by` VARCHAR(255), PRIMARY KEY (`id`), CONSTRAINT uc_name UNIQUE (product_name));
+          CREATE TABLE IF NOT EXISTS `product_model` ( `id` BIGINT AUTO_INCREMENT, `product_id` BIGINT, `model_name` VARCHAR(255), `book_id` BIGINT,
+          	`industry_report_id` BIGINT, `specification_report_id` BIGINT, `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          	`updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, `deleted_at` TIMESTAMP NULL DEFAULT NULL, `created_by` VARCHAR(255),
+          	`updated_by` VARCHAR(255), `deleted_by` VARCHAR(255), PRIMARY KEY (`id`), CONSTRAINT uc_name UNIQUE (model_name));
+          CREATE TABLE IF NOT EXISTS `description` ( `id` BIGINT AUTO_INCREMENT, `model_id` BIGINT, `description_line` LONGTEXT,
+          	`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          	`deleted_at` TIMESTAMP NULL DEFAULT NULL, `created_by` VARCHAR(255), `updated_by` VARCHAR(255), `deleted_by` VARCHAR(255),
+          	PRIMARY KEY (`id`));
+          ' > /docker-entrypoint-initdb.d/init.sql;
+                             /usr/local/bin/docker-entrypoint.sh --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci"]
+          env:
+            - name: MYSQL_ALLOW_EMPTY_PASSWORD
+              value: "1"
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_USER
+          ports:
+            - containerPort: 3306
+              name: evbx-mysql
+          volumeMounts:
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mysql-persistent-storage
+          persistentVolumeClaim:
+            claimName: mysql-pv-claim-dev
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: evbx-mysql
+  namespace: evbx-dev
+  labels:
+    app: evbx-mysql
+    environment: development
+spec:
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+      nodePort: 30306
+  selector:
+    app: evbx-mysql
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evbx-resource
+  namespace: evbx-dev
+  labels:
+    app: evbx-resource
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: evbx-resource
+  template:
+    metadata:
+      labels:
+        app: evbx-resource
+    spec:
+      containers:
+        - name: evbx-resource
+          image: klindziuk/evbx-resource-kube
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8002
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: evbx-resource
+  namespace: evbx-dev
+  labels:
+    app: evbx-resource
+spec:
+  type: NodePort
+  selector:
+    app: evbx-resource
+  ports:
+    - name: http
+      port: 8002
+      targetPort: 8002
+      nodePort: 30802
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evbx-product
+  namespace: evbx-dev
+  labels:
+    app: evbx-product
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: evbx-product
+  template:
+    metadata:
+      labels:
+        app: evbx-product
+    spec:
+      containers:
+        - name: evbx-product
+          image: klindziuk/evbx-product-kube
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: evbx-product
+  namespace: evbx-dev
+  labels:
+    app: evbx-product
+spec:
+  type: NodePort
+  selector:
+    app: evbx-product
+  ports:
+    - name: http
+      port: 8001
+      targetPort: 8001
+      nodePort: 30801
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evbx-graphql
+  namespace: evbx-dev
+  labels:
+    app: evbx-graphql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: evbx-graphql
+  template:
+    metadata:
+      labels:
+        app: evbx-graphql
+    spec:
+      containers:
+        - name: evbx-graphql
+          image: klindziuk/evbx-graphql
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: evbx-graphql
+  namespace: evbx-dev
+  labels:
+    app: evbx-graphql
+spec:
+  type: NodePort
+  selector:
+    app: evbx-graphql
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      nodePort: 30800
